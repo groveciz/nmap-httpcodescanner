@@ -1,0 +1,191 @@
+"""
+FastAPI Main Application
+"""
+from fastapi import FastAPI, UploadFile, File, Request, BackgroundTasks
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+import uuid
+import os
+import shutil
+from typing import Dict
+
+from app.config import UPLOADS_DIR, RESULTS_DIR
+from app.scanner import scan_batch
+from app.http_checker import check_batch
+from app.excel_handler import read_excel, write_excel, get_unique_ips
+
+app = FastAPI(
+    title="Nmap HTTP Code Scanner",
+    description="Network scanner with parallel Nmap and HTTP status checking",
+    version="1.0.0"
+)
+
+# Templates
+templates = Jinja2Templates(directory="templates")
+
+# Static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# In-memory job storage
+jobs: Dict[str, dict] = {}
+
+
+@app.get("/", response_class=HTMLResponse)
+async def index(request: Request):
+    """Main page with upload form."""
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.post("/upload")
+async def upload_file(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...)
+):
+    """
+    Handle Excel file upload and start scan job.
+    """
+    # Generate job ID
+    job_id = str(uuid.uuid4())[:8]
+    
+    # Save uploaded file
+    upload_path = os.path.join(UPLOADS_DIR, f"{job_id}.xlsx")
+    with open(upload_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    # Initialize job status
+    jobs[job_id] = {
+        "status": "processing",
+        "phase": "reading",
+        "progress": 0,
+        "total": 0,
+        "message": "Reading Excel file...",
+        "result_file": None
+    }
+    
+    # Start background scan
+    background_tasks.add_task(run_scan, job_id, upload_path)
+    
+    # Return HTMX partial with job ID
+    return templates.TemplateResponse(
+        "partials/progress.html",
+        {"request": request, "job_id": job_id, "job": jobs[job_id]}
+    )
+
+
+def update_progress(completed: int, total: int, phase: str, job_id: str):
+    """Callback to update job progress."""
+    if job_id in jobs:
+        jobs[job_id]["progress"] = completed
+        jobs[job_id]["total"] = total
+        jobs[job_id]["phase"] = phase
+        
+        if phase == "nmap":
+            jobs[job_id]["message"] = f"Scanning ports: {completed}/{total}"
+        elif phase == "http":
+            jobs[job_id]["message"] = f"Checking HTTP: {completed}/{total}"
+
+
+def run_scan(job_id: str, upload_path: str):
+    """
+    Background task to run the full scan pipeline.
+    """
+    try:
+        # Phase 1: Read Excel
+        jobs[job_id]["message"] = "Reading Excel file..."
+        items = read_excel(upload_path)
+        
+        if not items:
+            jobs[job_id]["status"] = "error"
+            jobs[job_id]["message"] = "No valid data found in Excel"
+            return
+        
+        # Phase 2: Get unique IPs and scan
+        unique_ips = get_unique_ips(items)
+        jobs[job_id]["total"] = len(unique_ips)
+        jobs[job_id]["phase"] = "nmap"
+        jobs[job_id]["message"] = f"Starting Nmap scan for {len(unique_ips)} IPs..."
+        
+        # Create progress callback
+        def nmap_progress(completed, total, phase):
+            update_progress(completed, total, phase, job_id)
+        
+        scan_results = scan_batch(unique_ips, progress_callback=nmap_progress)
+        
+        # Build IP -> ports mapping
+        ip_to_ports = {r["ip"]: r["ports"] for r in scan_results}
+        
+        # Add ports to items
+        for item in items:
+            item["ports"] = ip_to_ports.get(item["ip"], "null")
+        
+        # Phase 3: HTTP check
+        jobs[job_id]["total"] = len(items)
+        jobs[job_id]["phase"] = "http"
+        jobs[job_id]["message"] = f"Checking HTTP status for {len(items)} domains..."
+        
+        def http_progress(completed, total, phase):
+            update_progress(completed, total, phase, job_id)
+        
+        http_results = check_batch(items, progress_callback=http_progress)
+        
+        # Merge HTTP results into items
+        domain_to_http = {r["domain"]: r for r in http_results}
+        for item in items:
+            http_data = domain_to_http.get(item["domain"], {})
+            item["http_status"] = http_data.get("http_status", "")
+            item["https_status"] = http_data.get("https_status", "")
+            item["http_default"] = http_data.get("http_default", "")
+            item["https_default"] = http_data.get("https_default", "")
+        
+        # Phase 4: Write results
+        jobs[job_id]["message"] = "Writing results..."
+        result_path = os.path.join(RESULTS_DIR, f"{job_id}_results.xlsx")
+        write_excel(items, result_path)
+        
+        # Mark complete
+        jobs[job_id]["status"] = "complete"
+        jobs[job_id]["message"] = f"Scan complete! {len(items)} domains processed."
+        jobs[job_id]["result_file"] = f"{job_id}_results.xlsx"
+        
+        # Cleanup upload
+        if os.path.exists(upload_path):
+            os.remove(upload_path)
+            
+    except Exception as e:
+        jobs[job_id]["status"] = "error"
+        jobs[job_id]["message"] = f"Error: {str(e)}"
+
+
+@app.get("/status/{job_id}")
+async def get_status(request: Request, job_id: str):
+    """
+    Get job status (used by HTMX polling).
+    """
+    job = jobs.get(job_id, {"status": "not_found", "message": "Job not found"})
+    return templates.TemplateResponse(
+        "partials/progress.html",
+        {"request": request, "job_id": job_id, "job": job}
+    )
+
+
+@app.get("/download/{filename}")
+async def download_file(filename: str):
+    """
+    Download result Excel file.
+    """
+    file_path = os.path.join(RESULTS_DIR, filename)
+    if os.path.exists(file_path):
+        return FileResponse(
+            path=file_path,
+            filename=filename,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+    return JSONResponse({"error": "File not found"}, status_code=404)
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    return {"status": "healthy"}
