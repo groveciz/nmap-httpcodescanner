@@ -136,6 +136,14 @@ def run_scan(job_id: str, upload_path: str):
             http_data = domain_to_http.get(item["domain"], {})
             http_status = http_data.get("http_status", "")
             https_status = http_data.get("https_status", "")
+            http_default = http_data.get("http_default", "")
+            https_default = http_data.get("https_default", "")
+            
+            # Replace status with "default page" if default page detected
+            if http_default == "True":
+                http_status = "default page"
+            if https_default == "True":
+                https_status = "default page"
             
             # Apply http-only / https-only labels
             if http_status and not https_status:
@@ -145,8 +153,6 @@ def run_scan(job_id: str, upload_path: str):
             
             item["http_status"] = http_status
             item["https_status"] = https_status
-            item["http_default"] = http_data.get("http_default", "")
-            item["https_default"] = http_data.get("https_default", "")
         
         # Phase 4: Write results
         jobs[job_id]["message"] = "Writing results..."

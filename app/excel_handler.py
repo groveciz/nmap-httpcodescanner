@@ -47,8 +47,6 @@ def write_excel(results: List[Dict], output_path: str) -> str:
     - Column C: Ports
     - Column D: HTTP Status
     - Column E: HTTPS Status
-    - Column F: HTTP Default
-    - Column G: HTTPS Default
     
     Returns:
         Path to created file
@@ -58,7 +56,7 @@ def write_excel(results: List[Dict], output_path: str) -> str:
     ws.title = "Scan Results"
     
     # Headers
-    headers = ["Domain", "IP", "Ports", "HTTP Status", "HTTPS Status", "HTTP Default", "HTTPS Default"]
+    headers = ["Domain", "IP", "Ports", "HTTP Status", "HTTPS Status"]
     for col, header in enumerate(headers, 1):
         ws.cell(row=1, column=col, value=header)
     
@@ -69,8 +67,6 @@ def write_excel(results: List[Dict], output_path: str) -> str:
         ws.cell(row=row_idx, column=3, value=item.get("ports", ""))
         ws.cell(row=row_idx, column=4, value=item.get("http_status", ""))
         ws.cell(row=row_idx, column=5, value=item.get("https_status", ""))
-        ws.cell(row=row_idx, column=6, value=item.get("http_default", ""))
-        ws.cell(row=row_idx, column=7, value=item.get("https_default", ""))
     
     # Auto-adjust column widths
     for column in ws.columns:
