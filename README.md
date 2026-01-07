@@ -22,6 +22,8 @@ A lightweight, modern network scanner with parallel Nmap port scanning and HTTP/
 
 ## Installation
 
+### macOS / Linux
+
 ```bash
 # Clone
 git clone https://github.com/groveciz/nmap-httpcodescanner.git
@@ -29,7 +31,7 @@ cd nmap-httpcodescanner
 
 # Create virtual environment
 python3 -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
@@ -38,7 +40,33 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
+### Windows
+
+**Prerequisites:** Install [Nmap for Windows](https://nmap.org/download.html) and ensure it's added to PATH.
+
+```powershell
+# Clone
+git clone https://github.com/groveciz/nmap-httpcodescanner.git
+cd nmap-httpcodescanner
+
+# Create virtual environment
+python -m venv venv
+.\venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run
+uvicorn app.main:app --reload
+```
+
+> **Note:** If you get "nmap not found" error, add Nmap to your PATH:
+> 1. Open System Properties → Environment Variables
+> 2. Add `C:\Program Files (x86)\Nmap` to the `Path` variable
+> 3. Restart your terminal
+
 Open http://localhost:8000 in your browser.
+
 
 ## Input Format
 
