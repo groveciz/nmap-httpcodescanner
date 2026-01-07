@@ -134,8 +134,17 @@ def run_scan(job_id: str, upload_path: str):
         domain_to_http = {r["domain"]: r for r in http_results}
         for item in items:
             http_data = domain_to_http.get(item["domain"], {})
-            item["http_status"] = http_data.get("http_status", "")
-            item["https_status"] = http_data.get("https_status", "")
+            http_status = http_data.get("http_status", "")
+            https_status = http_data.get("https_status", "")
+            
+            # Apply http-only / https-only labels
+            if http_status and not https_status:
+                https_status = "http-only"
+            elif https_status and not http_status:
+                http_status = "https-only"
+            
+            item["http_status"] = http_status
+            item["https_status"] = https_status
             item["http_default"] = http_data.get("http_default", "")
             item["https_default"] = http_data.get("https_default", "")
         
