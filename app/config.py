@@ -6,7 +6,8 @@ NMAP_WORKERS = 10
 HTTP_WORKERS = 20
 
 # Timeout settings (seconds)
-NMAP_TIMEOUT = 60
+# Note: Nmap with -sV (version detection) can take 2-3 minutes per host
+NMAP_TIMEOUT = 180
 HTTP_TIMEOUT = 15
 
 # Upload/Results directories
