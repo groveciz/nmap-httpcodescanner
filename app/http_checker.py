@@ -115,15 +115,33 @@ def normalize_error(value: str) -> str:
     if not value:
         return value
     
-    if any(x in value for x in ['ConnectionResetError', 'RemoteDisconnected', 'Failed to establish', 'internal error']):
-        return 'Connection Reset'
-    if 'key too weak' in value or 'self signed' in value:
+    # Convert to lowercase for easier matching
+    lower_value = value.lower()
+    
+    # === SSL/TLS Errors ===
+    if 'key too weak' in lower_value or 'self signed' in lower_value:
         return 'invalid certificate'
-    if 'expired' in value:
+    if 'expired' in lower_value:
         return 'expired certificate'
-    if 'timeout' in value:
-        return 'timeout'
-    if 'match' in value:
+    if 'certificate_verify_failed' in lower_value:
+        return 'certificate verification failed'
+    if 'wrong_version_number' in lower_value:
+        return 'SSL version mismatch'
+    if 'tlsv1_alert_protocol_version' in lower_value or 'protocol_version' in lower_value:
+        return 'TLS version not supported'
+    if 'unsafe_legacy_renegotiation' in lower_value:
+        return 'legacy SSL negotiation'
+    if 'handshake_failure' in lower_value or 'ssl_handshake' in lower_value:
+        return 'SSL handshake failed'
+    if 'certificate required' in lower_value:
+        return 'client certificate required'
+    if 'unknown ca' in lower_value or 'unknown_ca' in lower_value:
+        return 'unknown certificate authority'
+    if 'certificate revoked' in lower_value or 'revoked' in lower_value:
+        return 'certificate revoked'
+    if 'hostname mismatch' in lower_value:
+        return 'hostname mismatch'
+    if 'match' in lower_value:
         try:
             parts = value.split("match")
             extracted = re.findall(r"(?<=')[^']+(?=')", parts[1])
@@ -131,8 +149,38 @@ def normalize_error(value: str) -> str:
                 return f"different certificate: {extracted[0]}"
         except:
             pass
-    if 'local' in value:
+    if 'local' in lower_value and 'issuer' in lower_value:
         return 'manual check required'
+    
+    # === Connection Errors ===
+    if any(x in lower_value for x in ['connectionreseterror', 'remotedisconnected', 'failed to establish', 'internal error']):
+        return 'Connection Reset'
+    if 'name or service not known' in lower_value or 'getaddrinfo failed' in lower_value:
+        return 'DNS resolution failed'
+    if 'no route to host' in lower_value:
+        return 'host unreachable'
+    if 'connection refused' in lower_value:
+        return 'connection refused'
+    if 'network is unreachable' in lower_value:
+        return 'network unreachable'
+    if 'max retries exceeded' in lower_value:
+        return 'max retries exceeded'
+    if 'read timed out' in lower_value:
+        return 'read timeout'
+    if 'connection timed out' in lower_value:
+        return 'connection timeout'
+    if 'timeout' in lower_value:
+        return 'timeout'
+    
+    # === HTTP Errors ===
+    if 'too many redirects' in lower_value or 'exceeded' in lower_value and 'redirect' in lower_value:
+        return 'redirect loop'
+    if 'badstatusline' in lower_value:
+        return 'invalid HTTP response'
+    if 'incompleteread' in lower_value:
+        return 'incomplete response'
+    if 'chunkedencodingerror' in lower_value:
+        return 'encoding error'
     
     return value
 
