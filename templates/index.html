@@ -180,15 +180,40 @@
                                     time</label>
                             </div>
 
-                            <button type="submit" class="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold 
-                                           rounded-xl transition-all flex items-center justify-center space-x-2">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="flex space-x-3">
+                                <button type="submit" class="flex-1 py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold 
+                                               rounded-xl transition-all flex items-center justify-center space-x-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z">
+                                        </path>
+                                    </svg>
+                                    <span>Full Scan</span>
+                                    <svg id="cfSpinner" class="htmx-indicator w-5 h-5 animate-spin" fill="none"
+                                        viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                            stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                        </path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Test Scan Form (separate form for different endpoint) -->
+                        <form id="cloudflareTestForm" hx-post="/cloudflare-test" hx-target="#results"
+                            hx-indicator="#cfTestSpinner" class="mt-3">
+                            <input type="hidden" id="cfTokenTest" name="api_token">
+                            <button type="submit" class="w-full py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium 
+                                           rounded-lg transition-all flex items-center justify-center space-x-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z">
+                                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4">
                                     </path>
                                 </svg>
-                                <span>Scan Cloudflare Domains</span>
-                                <svg id="cfSpinner" class="htmx-indicator w-5 h-5 animate-spin" fill="none"
+                                <span>Test (First 10 Records)</span>
+                                <svg id="cfTestSpinner" class="htmx-indicator w-4 h-4 animate-spin" fill="none"
                                     viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
                                         stroke-width="4"></circle>
@@ -278,12 +303,24 @@
             if (saveToken.checked && cfToken.value) {
                 localStorage.setItem(CF_TOKEN_KEY, cfToken.value);
             }
+            // Sync to test form hidden input
+            document.getElementById('cfTokenTest').value = cfToken.value;
         });
 
         // Save token before form submit if checkbox is checked
         document.getElementById('cloudflareForm').addEventListener('submit', () => {
             if (saveToken.checked && cfToken.value) {
                 localStorage.setItem(CF_TOKEN_KEY, cfToken.value);
+            }
+        });
+
+        // Sync token to test form before submit
+        document.getElementById('cloudflareTestForm').addEventListener('submit', (e) => {
+            const testTokenInput = document.getElementById('cfTokenTest');
+            testTokenInput.value = cfToken.value;
+            if (!testTokenInput.value) {
+                e.preventDefault();
+                alert('Please enter your Cloudflare API token first');
             }
         });
     </script>

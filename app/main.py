@@ -233,9 +233,40 @@ async def cloudflare_scan(
     )
 
 
-def run_cloudflare_scan(job_id: str, api_token: str):
+@app.post("/cloudflare-test")
+async def cloudflare_test_scan(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    api_token: str = Form(...)
+):
+    """
+    Test scan - only first 10 A records from Cloudflare.
+    """
+    job_id = str(uuid.uuid4())[:8]
+    
+    jobs[job_id] = {
+        "status": "processing",
+        "phase": "cloudflare",
+        "progress": 0,
+        "total": 0,
+        "message": "Connecting to Cloudflare (TEST MODE - 10 records)...",
+        "result_file": None
+    }
+    
+    background_tasks.add_task(run_cloudflare_scan, job_id, api_token, limit=10)
+    
+    return templates.TemplateResponse(
+        "partials/progress.html",
+        {"request": request, "job_id": job_id, "job": jobs[job_id]}
+    )
+
+
+def run_cloudflare_scan(job_id: str, api_token: str, limit: int = None):
     """
     Background task to fetch Cloudflare A records and run scan.
+    
+    Args:
+        limit: Optional limit on number of records to scan (for testing)
     """
     try:
         # Phase 1: Fetch from Cloudflare
@@ -244,6 +275,11 @@ def run_cloudflare_scan(job_id: str, api_token: str):
         
         jobs[job_id]["phase"] = "cloudflare"
         items = fetch_all_a_records(api_token, progress_callback=cf_progress)
+        
+        # Apply limit if specified (test mode)
+        if limit and len(items) > limit:
+            items = items[:limit]
+            jobs[job_id]["message"] = f"TEST MODE: Using first {limit} of {len(items)} records"
         
         if not items:
             jobs[job_id]["status"] = "error"
