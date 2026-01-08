@@ -1,19 +1,20 @@
 """
 FastAPI Main Application
 """
-from fastapi import FastAPI, UploadFile, File, Request, BackgroundTasks
+from fastapi import FastAPI, UploadFile, File, Request, BackgroundTasks, Form
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import uuid
 import os
 import shutil
-from typing import Dict
+from typing import Dict, Optional
 
 from app.config import UPLOADS_DIR, RESULTS_DIR
 from app.scanner import scan_batch
 from app.http_checker import check_batch
 from app.excel_handler import read_excel, write_excel, get_unique_ips
+from app.cloudflare_client import fetch_all_a_records
 
 app = FastAPI(
     title="Nmap HTTP Code Scanner",
@@ -200,7 +201,126 @@ async def download_file(filename: str):
     return JSONResponse({"error": "File not found"}, status_code=404)
 
 
+@app.post("/cloudflare")
+async def cloudflare_scan(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    api_token: str = Form(...)
+):
+    """
+    Start scan using Cloudflare API to fetch A records.
+    """
+    # Generate job ID
+    job_id = str(uuid.uuid4())[:8]
+    
+    # Initialize job status
+    jobs[job_id] = {
+        "status": "processing",
+        "phase": "cloudflare",
+        "progress": 0,
+        "total": 0,
+        "message": "Connecting to Cloudflare...",
+        "result_file": None
+    }
+    
+    # Start background scan
+    background_tasks.add_task(run_cloudflare_scan, job_id, api_token)
+    
+    # Return HTMX partial with job ID
+    return templates.TemplateResponse(
+        "partials/progress.html",
+        {"request": request, "job_id": job_id, "job": jobs[job_id]}
+    )
+
+
+def run_cloudflare_scan(job_id: str, api_token: str):
+    """
+    Background task to fetch Cloudflare A records and run scan.
+    """
+    try:
+        # Phase 1: Fetch from Cloudflare
+        def cf_progress(message):
+            jobs[job_id]["message"] = message
+        
+        jobs[job_id]["phase"] = "cloudflare"
+        items = fetch_all_a_records(api_token, progress_callback=cf_progress)
+        
+        if not items:
+            jobs[job_id]["status"] = "error"
+            jobs[job_id]["message"] = "No A records found in Cloudflare"
+            return
+        
+        jobs[job_id]["message"] = f"Found {len(items)} A records, starting scan..."
+        
+        # Phase 2: Get unique IPs and scan
+        unique_ips = get_unique_ips(items)
+        jobs[job_id]["total"] = len(unique_ips)
+        jobs[job_id]["phase"] = "nmap"
+        jobs[job_id]["message"] = f"Starting Nmap scan for {len(unique_ips)} IPs..."
+        
+        def nmap_progress(completed, total, phase):
+            update_progress(completed, total, phase, job_id)
+        
+        scan_results = scan_batch(unique_ips, progress_callback=nmap_progress)
+        
+        # Build IP -> ports mapping
+        ip_to_ports = {r["ip"]: r["ports"] for r in scan_results}
+        
+        # Add ports to items
+        for item in items:
+            item["ports"] = ip_to_ports.get(item["ip"], "null")
+        
+        # Phase 3: HTTP check
+        jobs[job_id]["total"] = len(items)
+        jobs[job_id]["phase"] = "http"
+        jobs[job_id]["message"] = f"Checking HTTP status for {len(items)} domains..."
+        
+        def http_progress(completed, total, phase):
+            update_progress(completed, total, phase, job_id)
+        
+        http_results = check_batch(items, progress_callback=http_progress)
+        
+        # Merge HTTP results into items
+        domain_to_http = {r["domain"]: r for r in http_results}
+        for item in items:
+            http_data = domain_to_http.get(item["domain"], {})
+            http_status = http_data.get("http_status", "")
+            https_status = http_data.get("https_status", "")
+            http_default = http_data.get("http_default", "")
+            https_default = http_data.get("https_default", "")
+            
+            # Replace status with "default page" if default page detected
+            if http_default == "True":
+                http_status = "default page"
+            if https_default == "True":
+                https_status = "default page"
+            
+            # Apply http-only / https-only labels
+            if http_status and not https_status:
+                https_status = "http-only"
+            elif https_status and not http_status:
+                http_status = "https-only"
+            
+            item["http_status"] = http_status
+            item["https_status"] = https_status
+        
+        # Phase 4: Write results
+        jobs[job_id]["message"] = "Writing results..."
+        result_path = os.path.join(RESULTS_DIR, f"{job_id}_cloudflare_results.xlsx")
+        write_excel(items, result_path)
+        
+        # Mark complete
+        jobs[job_id]["status"] = "complete"
+        jobs[job_id]["message"] = f"Scan complete! {len(items)} domains from Cloudflare processed."
+        jobs[job_id]["result_file"] = f"{job_id}_cloudflare_results.xlsx"
+        
+    except Exception as e:
+        jobs[job_id]["status"] = "error"
+        jobs[job_id]["message"] = f"Error: {str(e)}"
+
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy"}
+

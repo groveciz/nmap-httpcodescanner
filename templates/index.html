@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" class="h-full">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -25,27 +26,41 @@
         .gradient-bg {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
+
         .card {
             backdrop-filter: blur(10px);
             background: rgba(255, 255, 255, 0.1);
         }
+
         .drop-zone {
             border: 2px dashed rgba(255, 255, 255, 0.3);
             transition: all 0.3s ease;
         }
-        .drop-zone:hover, .drop-zone.drag-over {
+
+        .drop-zone:hover,
+        .drop-zone.drag-over {
             border-color: rgba(255, 255, 255, 0.8);
             background: rgba(255, 255, 255, 0.1);
         }
+
         @keyframes pulse-slow {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
         }
+
         .animate-pulse-slow {
             animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
     </style>
 </head>
+
 <body class="h-full gradient-bg">
     <div class="min-h-full flex flex-col">
         <!-- Header -->
@@ -54,14 +69,17 @@
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-3">
                         <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z">
+                            </path>
                         </svg>
                         <h1 class="text-2xl font-bold text-white">Nmap HTTP Scanner</h1>
                     </div>
-                    <a href="https://github.com/groveciz/nmap-httpcodescanner" target="_blank" 
-                       class="text-white/70 hover:text-white transition-colors">
+                    <a href="https://github.com/groveciz/nmap-httpcodescanner" target="_blank"
+                        class="text-white/70 hover:text-white transition-colors">
                         <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                            <path
+                                d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
                         </svg>
                     </a>
                 </div>
@@ -79,39 +97,36 @@
                     </div>
 
                     <!-- Upload Form -->
-                    <form id="uploadForm" 
-                          hx-post="/upload" 
-                          hx-target="#results" 
-                          hx-encoding="multipart/form-data"
-                          hx-indicator="#spinner">
-                        
+                    <form id="uploadForm" hx-post="/upload" hx-target="#results" hx-encoding="multipart/form-data"
+                        hx-indicator="#spinner">
+
                         <div id="dropZone" class="drop-zone rounded-xl p-12 text-center cursor-pointer mb-6"
-                             onclick="document.getElementById('fileInput').click()">
-                            <svg class="w-16 h-16 mx-auto mb-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            onclick="document.getElementById('fileInput').click()">
+                            <svg class="w-16 h-16 mx-auto mb-4 text-white/50" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
+                                </path>
                             </svg>
                             <p class="text-lg mb-2">Drag & drop your Excel file here</p>
                             <p class="text-sm text-white/50">or click to browse</p>
                             <p id="fileName" class="mt-4 text-primary font-medium hidden"></p>
                         </div>
-                        
-                        <input type="file" 
-                               id="fileInput" 
-                               name="file" 
-                               accept=".xlsx,.xls" 
-                               class="hidden"
-                               onchange="handleFileSelect(this)">
-                        
-                        <button type="submit" 
-                                id="submitBtn"
-                                disabled
-                                class="w-full py-4 bg-white text-indigo-600 font-semibold rounded-xl 
+
+                        <input type="file" id="fileInput" name="file" accept=".xlsx,.xls" class="hidden"
+                            onchange="handleFileSelect(this)">
+
+                        <button type="submit" id="submitBtn" disabled class="w-full py-4 bg-white text-indigo-600 font-semibold rounded-xl 
                                        disabled:opacity-50 disabled:cursor-not-allowed
                                        hover:bg-white/90 transition-all flex items-center justify-center space-x-2">
                             <span>Start Scan</span>
-                            <svg id="spinner" class="htmx-indicator w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            <svg id="spinner" class="htmx-indicator w-5 h-5 animate-spin" fill="none"
+                                viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                </path>
                             </svg>
                         </button>
                     </form>
@@ -135,6 +150,54 @@
                                 Example: example.com | 93.184.216.34
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Cloudflare Section -->
+                    <div class="mt-8 pt-6 border-t border-white/10">
+                        <h3 class="font-medium mb-3 flex items-center space-x-2">
+                            <svg class="w-5 h-5 text-orange-400" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M16.309 9.451l-.505-.028c-.158 0-.286.076-.34.183l-.943 1.897c-.055.114-.055.234 0 .348.054.114.174.183.34.183l.505.028c.475.028.95-.076 1.375-.296.425-.22.785-.535 1.045-.918.26-.383.408-.823.433-1.274.025-.451-.072-.897-.281-1.310-.209-.413-.513-.776-.89-1.057-.377-.281-.816-.47-1.284-.548-.468-.078-.95-.043-1.405.102-.455.145-.867.395-1.195.720l-1.810 1.793-.13-.07c-.055-.028-.115-.042-.175-.042-.114 0-.222.055-.286.148l-.66.955c-.055.083-.055.183 0 .266.055.083.147.137.26.148l.51.042c.06.007.12-.007.175-.042l.13-.083 1.810-1.793c.175-.175.381-.308.608-.394.227-.087.469-.128.712-.117.243.01.48.072.695.183.215.11.404.265.556.454.153.19.265.41.33.649.065.238.08.49.044.735-.037.245-.123.48-.253.690-.13.21-.301.39-.505.527-.204.137-.435.237-.68.286l-.505.028z" />
+                            </svg>
+                            <span>Cloudflare Integration</span>
+                        </h3>
+                        <p class="text-white/70 text-sm mb-4">Fetch all A records from your Cloudflare zones and scan
+                            them</p>
+
+                        <form id="cloudflareForm" hx-post="/cloudflare" hx-target="#results" hx-indicator="#cfSpinner">
+
+                            <div class="mb-4">
+                                <label class="block text-sm text-white/70 mb-2">Cloudflare API Token</label>
+                                <input type="password" id="cfToken" name="api_token" placeholder="Enter your API token"
+                                    class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg 
+                                              text-white placeholder-white/40 focus:outline-none focus:border-white/50">
+                            </div>
+
+                            <div class="flex items-center mb-4">
+                                <input type="checkbox" id="saveToken"
+                                    class="w-4 h-4 rounded border-white/30 bg-white/10">
+                                <label for="saveToken" class="ml-2 text-sm text-white/70">Save token for next
+                                    time</label>
+                            </div>
+
+                            <button type="submit" class="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold 
+                                           rounded-xl transition-all flex items-center justify-center space-x-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z">
+                                    </path>
+                                </svg>
+                                <span>Scan Cloudflare Domains</span>
+                                <svg id="cfSpinner" class="htmx-indicator w-5 h-5 animate-spin" fill="none"
+                                    viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                        stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                    </path>
+                                </svg>
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -186,6 +249,44 @@
                 submitBtn.disabled = false;
             }
         }
+
+        // Cloudflare token handling
+        const cfToken = document.getElementById('cfToken');
+        const saveToken = document.getElementById('saveToken');
+        const CF_TOKEN_KEY = 'cf_api_token';
+
+        // Load saved token on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedToken = localStorage.getItem(CF_TOKEN_KEY);
+            if (savedToken) {
+                cfToken.value = savedToken;
+                saveToken.checked = true;
+            }
+        });
+
+        // Save or remove token based on checkbox
+        saveToken.addEventListener('change', () => {
+            if (saveToken.checked && cfToken.value) {
+                localStorage.setItem(CF_TOKEN_KEY, cfToken.value);
+            } else {
+                localStorage.removeItem(CF_TOKEN_KEY);
+            }
+        });
+
+        // Update saved token when value changes (if save is checked)
+        cfToken.addEventListener('input', () => {
+            if (saveToken.checked && cfToken.value) {
+                localStorage.setItem(CF_TOKEN_KEY, cfToken.value);
+            }
+        });
+
+        // Save token before form submit if checkbox is checked
+        document.getElementById('cloudflareForm').addEventListener('submit', () => {
+            if (saveToken.checked && cfToken.value) {
+                localStorage.setItem(CF_TOKEN_KEY, cfToken.value);
+            }
+        });
     </script>
 </body>
+
 </html>
