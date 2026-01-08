@@ -158,7 +158,7 @@ def run_scan(job_id: str, upload_path: str):
         # Phase 4: Write results
         jobs[job_id]["message"] = "Writing results..."
         result_path = os.path.join(RESULTS_DIR, f"{job_id}_results.xlsx")
-        write_excel(items, result_path)
+        write_cloudflare_excel(items, result_path)
         
         # Mark complete
         jobs[job_id]["status"] = "complete"

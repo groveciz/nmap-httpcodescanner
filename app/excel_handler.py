@@ -8,27 +8,86 @@ import os
 from app.config import RESULTS_DIR
 
 
+def extract_subdomain_zone(domain: str) -> tuple:
+    """
+    Extract subdomain and zone from a full domain name.
+    
+    Examples:
+        api.example.com -> ('api', 'example.com')
+        www.api.example.com -> ('www.api', 'example.com')
+        example.com -> ('@', 'example.com')
+    """
+    parts = domain.split('.')
+    
+    if len(parts) <= 2:
+        # example.com or example.co.uk style
+        return '@', domain
+    else:
+        # Assume last 2 parts are the zone (works for .com, .net, .ru, etc.)
+        # For .co.uk style domains, this won't be perfect but covers most cases
+        zone = '.'.join(parts[-2:])
+        subdomain = '.'.join(parts[:-2])
+        return subdomain if subdomain else '@', zone
+
+
 def read_excel(file_path: str) -> List[Dict]:
     """
-    Read Excel file and extract domain/IP pairs.
+    Read Excel file and extract domain/IP data.
+    Auto-detects format:
     
-    Expected format:
+    OLD FORMAT (2 columns):
     - Column A: Domain
     - Column B: IP Address
     
+    NEW FORMAT (4 columns):
+    - Column A: Subdomain
+    - Column B: Zone
+    - Column C: Domain
+    - Column D: IP Address
+    
     Returns:
-        List of dicts with 'domain' and 'ip' keys
+        List of dicts with 'subdomain', 'zone', 'domain', and 'ip' keys
     """
     wb = openpyxl.load_workbook(file_path)
     ws = wb.active
     
     items = []
+    
+    # Detect format by checking first row column count
+    first_row = next(ws.iter_rows(min_row=1, max_row=1, values_only=True), None)
+    
+    if not first_row:
+        wb.close()
+        return items
+    
+    # Count non-empty columns in first row
+    col_count = sum(1 for cell in first_row if cell is not None)
+    
+    # Determine format: 4+ columns = new format, else old format
+    is_new_format = col_count >= 4
+    
     for row in ws.iter_rows(min_row=1, values_only=True):
-        domain = row[0] if len(row) > 0 else None
-        ip = row[1] if len(row) > 1 else None
+        if is_new_format:
+            # NEW FORMAT: Subdomain, Zone, Domain, IP
+            subdomain = row[0] if len(row) > 0 and row[0] else "@"
+            zone = row[1] if len(row) > 1 else None
+            domain = row[2] if len(row) > 2 else None
+            ip = row[3] if len(row) > 3 else None
+        else:
+            # OLD FORMAT: Domain, IP
+            domain = row[0] if len(row) > 0 else None
+            ip = row[1] if len(row) > 1 else None
+            
+            # Extract subdomain and zone from domain
+            if domain:
+                subdomain, zone = extract_subdomain_zone(str(domain).strip())
+            else:
+                subdomain, zone = None, None
         
         if domain and ip:
             items.append({
+                "subdomain": str(subdomain).strip() if subdomain else "@",
+                "zone": str(zone).strip() if zone else "",
                 "domain": str(domain).strip(),
                 "ip": str(ip).strip()
             })
