@@ -13,7 +13,7 @@ from typing import Dict, Optional
 from app.config import UPLOADS_DIR, RESULTS_DIR
 from app.scanner import scan_batch
 from app.http_checker import check_batch
-from app.excel_handler import read_excel, write_excel, get_unique_ips
+from app.excel_handler import read_excel, write_excel, get_unique_ips, write_cloudflare_excel
 from app.cloudflare_client import fetch_all_a_records
 
 app = FastAPI(
@@ -307,7 +307,7 @@ def run_cloudflare_scan(job_id: str, api_token: str):
         # Phase 4: Write results
         jobs[job_id]["message"] = "Writing results..."
         result_path = os.path.join(RESULTS_DIR, f"{job_id}_cloudflare_results.xlsx")
-        write_excel(items, result_path)
+        write_cloudflare_excel(items, result_path)
         
         # Mark complete
         jobs[job_id]["status"] = "complete"

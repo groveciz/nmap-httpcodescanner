@@ -92,7 +92,7 @@ def fetch_all_a_records(api_token: str, progress_callback=None) -> List[Dict]:
         progress_callback: Optional callback(message) for progress updates
     
     Returns:
-        List of dicts with 'domain' and 'ip' keys
+        List of dicts with 'subdomain', 'zone', 'domain', and 'ip' keys
     """
     if progress_callback:
         progress_callback("Fetching zones from Cloudflare...")
@@ -114,8 +114,20 @@ def fetch_all_a_records(api_token: str, progress_callback=None) -> List[Dict]:
         try:
             records = get_a_records(api_token, zone_id)
             for record in records:
+                domain = record["name"]
+                
+                # Extract subdomain from full domain
+                if domain == zone_name:
+                    subdomain = "@"
+                elif domain.endswith("." + zone_name):
+                    subdomain = domain[:-len(zone_name)-1]
+                else:
+                    subdomain = domain
+                
                 items.append({
-                    "domain": record["name"],
+                    "subdomain": subdomain,
+                    "zone": zone_name,
+                    "domain": domain,
                     "ip": record["content"]
                 })
         except Exception as e:
@@ -125,3 +137,4 @@ def fetch_all_a_records(api_token: str, progress_callback=None) -> List[Dict]:
         progress_callback(f"Fetched {len(items)} A records from {len(zones)} zones")
     
     return items
+
