@@ -225,32 +225,34 @@ def check_status(url: str) -> str:
 
 def check_default_page(url: str) -> str:
     """
-    Check if URL shows a default/placeholder page.
-    
+    Check if URL shows IIS default page.
+
     Returns:
-        "True" if default page, "False" otherwise, None on error
+        "True" if IIS default page, "False" otherwise, None on error
     """
     headers = {"User-Agent": USER_AGENT}
     try:
         resp = requests.get(url, headers=headers, timeout=5, verify=False)
+
+        # Only check HTML pages
+        content_type = resp.headers.get('Content-Type', '').lower()
+        if 'html' not in content_type:
+            return "False"
+
         soup = BeautifulSoup(resp.text, "html.parser")
         title = soup.title
-        
-        # No title = likely default page
+
         if title is None:
-            return "True"
-        
+            return "False"
+
         title_text = title.string if title.string else ""
         title_text = title_text.strip().lower()
-        
-        if not title_text:
-            return "True"
-        
-        # Check against patterns
+
+        # Only check for IIS default page patterns
         for pattern in DEFAULT_PAGE_PATTERNS:
             if pattern in title_text:
                 return "True"
-        
+
         return "False"
     except Exception:
         return None
